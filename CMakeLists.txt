@@ -12,6 +12,7 @@ file(GLOB SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/libs/sample_src/Hill/*.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/libs/src/*.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/libs/src/*.h
                     ${CMAKE_CURRENT_SOURCE_DIR}/libs/src/*.hpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h)
 
 add_executable(${PROJECT_NAME_STR} ${SRC_FILES})

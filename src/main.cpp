@@ -19,7 +19,7 @@ void processAllFunctions(double a, double b, double epsilon, ofstream& file)
     for (int function_number = 0; function_number < 999; function_number++)
     {
         // ф-я 1 (Shekel)
-        MethodPiyavsky method1(epsilon, a, b, function_number, 0);
+        MethodPiyavsky method1(epsilon, 0, 0, function_number, 0);
         method1.algorithm();
         method1.getResults(min_x1, min_value1, point_count1, true_x1, true_f1);
         double error_x1 = abs(min_x1 - true_x1);
@@ -27,7 +27,7 @@ void processAllFunctions(double a, double b, double epsilon, ofstream& file)
         file << function_number << ";" << min_x1 << ";" << min_value1 << ";" << point_count1 << ";" << true_x1 << ";" << true_f1 << ";" << error_x1 << ";" << error_f1 << ";";
 
         // ф-я 2 (Hill)
-        MethodPiyavsky method2(epsilon, a, b, function_number, 1);
+        MethodPiyavsky method2(epsilon, 0, 0, function_number, 1);
         method2.algorithm();
         method2.getResults(min_x2, min_value2, point_count2, true_x2, true_f2);
         double error_x2 = abs(min_x2 - true_x2);
@@ -41,11 +41,7 @@ int main()
 {
     setlocale(LC_ALL, "Russian");
     double a, b;
-    double epsilon = 0.01;
-    cout << "Введите левую границу интервала (a): ";
-    cin >> a;
-    cout << "Введите правую границу интервала (b): ";
-    cin >> b;
+    double epsilon = 0.001;
 
     ofstream file("results.csv");
     if (!file.is_open())
@@ -67,34 +63,9 @@ int main()
         }
     }*/
 
-    /*ofstream file_shekel("results_shekel.csv");
-    ofstream file_hill("results_hill.csv");
-
-    if (!file_shekel.is_open() || !file_hill.is_open())
-    {
-        cout << "Ошибка с файлами";
-        return 1;
-    }
-    file_shekel << "Номер_функции;Точка_минимума;Значение_функции;"
-        << "Количество_точек;Истинная_точка;Истинное_значение;"
-        << "Погрешность_x;Погрешность_f" << endl;
-
-    file_hill << "Номер_функции;Точка_минимума;Значение_функции;"
-        << "Количество_точек;Истинная_точка;Истинное_значение;"
-        << "Погрешность_x;Погрешность_f" << endl;
-
-    processFunctions(0, a, b, epsilon, file_shekel, "Shekel");
-    processFunctions(1, a, b, epsilon, file_hill, "Hill");
-
-    file_shekel.close();
-    file_hill.close();*/
-
-    processAllFunctions(a, b, epsilon, file);
+    processAllFunctions(0, 0, epsilon, file);
 
     file.close();
     cout << "Файл успешно создан и заполнен";
     return 0;
 }
-
-
-

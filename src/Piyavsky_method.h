@@ -15,13 +15,13 @@ class MethodPiyavsky {
     vector<double> x_values;
     vector<double> z_values;
     IOptProblem* problem;
-    //TShekelProblem* problem;
     double min_x;
     double min_value;
     size_t point_count;
     double true_opt_point;
     double true_opt_value;
     int flag;
+
 public:
     double objective_function(double x)
     {
@@ -55,7 +55,9 @@ public:
             a = lb[0];
             b = ub[0];
         }
-        L = lipschitz_constant(a, b);
+
+        L = problem->GetLipschitzConstant();
+
         x_values.push_back(a);
         x_values.push_back(b);
 
@@ -109,13 +111,13 @@ public:
             //double x_k1 = (x_values[t] + x_values[t - 1]) / 2.0 - (z_values[t] - z_values[t-1]) / (2.0 * L);
             double z_k1 = objective_function(x_k1);    // Зн-е функции в новой точке
 
-            // Вставляем новую точку и значение функции в вектора
+            // Вставляем новую т и зн-е ф-ии в вектора
             x_values.insert(x_values.begin() + t + 1, x_k1);
             sort(x_values.begin(), x_values.end());
 
             z_values.insert(z_values.begin() + t + 1, z_k1);
 
-            //условие остановки
+            //усл-е остановки
             if (x_values[t + 1] - x_values[t] <= epsilon)
             {
                 size_t min_index = 0;

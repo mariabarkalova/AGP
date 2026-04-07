@@ -1,3 +1,4 @@
+/*
 #pragma once
 #include <iostream>
 #include <vector>
@@ -160,7 +161,7 @@ public:
         }
         point_count = points.size();
     }
-
+    //закоменчено чтобы работало на многомерном
     void algorithm()
     {
         int iteration = 0;
@@ -192,4 +193,4 @@ public:
         }
         findMinimumPoint();
     }
-};
+};*/

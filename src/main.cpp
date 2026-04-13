@@ -129,15 +129,14 @@ using namespace std;
 
 struct TestParams {
     ProblemType type;    // тип задачи
-    int dim;             // размерность (для Grishagin всегда 2)
-    int func_count;      // количество функций
-    double epsilon;      // точность
-    double r;            // параметр метода
-    int tightness;       // глубина кривой Пеано
-    string name;         // имя для файла
+    int dim;
+    int func_count;      // кол-во ф-ций
+    double epsilon;
+    double r;
+    int tightness;
+    string name;
 };
 
-// Функция для тестирования одного класса задач
 void runTest(const TestParams& params, const string& filename) {
     cout << "\n========================================" << endl;
     cout << "Запуск: " << params.name << endl;
@@ -148,7 +147,6 @@ void runTest(const TestParams& params, const string& filename) {
 
     ofstream file(filename);
 
-    // Заголовок в зависимости от типа задачи
     if (params.type == PT_Grishagin) {
         file << "func_num;type;iterations;x1_found;x2_found;f_found;"
             << "x1_true;x2_true;f_true;error_f" << endl;
@@ -170,56 +168,57 @@ void runTest(const TestParams& params, const string& filename) {
     double total_error_f = 0;
     vector<double> errors;
 
+    // Счётчик решённых функций (погрешность меньше epsilon)
+    int solved_count = 0;
+
     int max_func = params.func_count;
 
     for (int func_num = 1; func_num <= max_func; func_num++) {
-        try {
-            // Создаём объект поиска через универсальный конструктор
-            GlobalSearch search(params.type, func_num, params.dim,
-                params.epsilon, params.r, params.tightness);
-            search.algorithm();
+        GlobalSearch search(params.type, func_num, params.dim, params.epsilon, params.r, params.tightness);
+        search.algorithm();
 
-            vector<double> point;
-            double value;
-            size_t points_count;
-            vector<double> true_point;
-            double true_value;
+        vector<double> point;
+        double value;
+        size_t points_count;
+        vector<double> true_point;
+        double true_value;
 
-            search.getResults(point, value, points_count, true_point, true_value);
+        search.getResults(point, value, points_count, true_point, true_value);
 
-            double error_f = abs(value - true_value);
-            total_iterations += points_count;
-            total_error_f += error_f;
-            errors.push_back(error_f);
+        double error_f = abs(value - true_value);
+        total_iterations += points_count;
+        total_error_f += error_f;
+        errors.push_back(error_f);
 
-            // Записываем в файл в зависимости от типа задачи
-            if (params.type == PT_Grishagin) {
-                file << func_num << ";Grishagin;" << points_count << ";"
-                    << point[0] << ";" << point[1] << ";" << value << ";"
-                    << true_point[0] << ";" << true_point[1] << ";" << true_value << ";"
-                    << error_f << endl;
-            }
-            else if (params.dim == 2) {
-                string className = (params.type == PT_GKLS_Simple) ? "simple" : "hard";
-                file << func_num << ";" << params.dim << ";" << className << ";" << points_count << ";"
-                    << point[0] << ";" << point[1] << ";" << value << ";"
-                    << true_point[0] << ";" << true_point[1] << ";" << true_value << ";"
-                    << error_f << endl;
-            }
-            else if (params.dim == 3) {
-                string className = (params.type == PT_GKLS_Simple) ? "simple" : "hard";
-                file << func_num << ";" << params.dim << ";" << className << ";" << points_count << ";"
-                    << point[0] << ";" << point[1] << ";" << point[2] << ";" << value << ";"
-                    << true_point[0] << ";" << true_point[1] << ";" << true_point[2] << ";" << true_value << ";"
-                    << error_f << endl;
-            }
-
-            if (func_num % 10 == 0) {
-                cout << "  Выполнено " << func_num << "/" << max_func << " функций" << endl;
-            }
+        // Проверяем, решена ли функция (погрешность меньше epsilon)
+        if (error_f < params.epsilon) {
+            solved_count++;
         }
-        catch (const char* msg) {
-            cout << "  Ошибка в функции " << func_num << ": " << msg << endl;
+
+        // Запись в файл
+        if (params.type == PT_Grishagin) {
+            file << func_num << ";Grishagin;" << points_count << ";"
+                << point[0] << ";" << point[1] << ";" << value << ";"
+                << true_point[0] << ";" << true_point[1] << ";" << true_value << ";"
+                << error_f << endl;
+        }
+        else if (params.dim == 2) {
+            string className = (params.type == PT_GKLS_Simple) ? "simple" : "hard";
+            file << func_num << ";" << params.dim << ";" << className << ";" << points_count << ";"
+                << point[0] << ";" << point[1] << ";" << value << ";"
+                << true_point[0] << ";" << true_point[1] << ";" << true_value << ";"
+                << error_f << endl;
+        }
+        else if (params.dim == 3) {
+            string className = (params.type == PT_GKLS_Simple) ? "simple" : "hard";
+            file << func_num << ";" << params.dim << ";" << className << ";" << points_count << ";"
+                << point[0] << ";" << point[1] << ";" << point[2] << ";" << value << ";"
+                << true_point[0] << ";" << true_point[1] << ";" << true_point[2] << ";" << true_value << ";"
+                << error_f << endl;
+        }
+
+        if (func_num % 10 == 0) {
+            cout << "  Выполнено " << func_num << "/" << max_func << " функций" << endl;
         }
     }
 
@@ -227,10 +226,132 @@ void runTest(const TestParams& params, const string& filename) {
 
     if (!errors.empty()) {
         sort(errors.begin(), errors.end());
-
         cout << "\n========== ИТОГОВЫЕ РЕЗУЛЬТАТЫ ДЛЯ " << params.name << " ==========\n";
-        cout << "Среднее количество итераций: " << total_iterations / max_func << "\n";
-        cout << "Средняя погрешность: " << total_error_f / max_func << "\n";
+        //cout << "Решено функций (error < eps): " << solved_count << " из " << max_func << " (" << fixed << setprecision(2) << (100.0 * solved_count / max_func) << "%)" << endl;
+        cout << "Среднее количество итераций: " << fixed << setprecision(2) << total_iterations / max_func << "\n";
+        cout << "Средняя погрешность: " << scientific << setprecision(6) << total_error_f / max_func << "\n";
+        cout << "Результаты сохранены в файл: " << filename << endl;
+    }
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    //int tightness = 10;
+    vector<TestParams> tests = {
+        {PT_Grishagin, 2, 100, 0.001, 2.7, 10, "Grishagin"},
+        {PT_GKLS_Simple, 2, 100, 0.001, 4.5, 10, "2D_Simple_GKLS"},
+        {PT_GKLS_Hard, 2, 100, 0.001, 5.0, 8, "2D_Hard_GKLS"},
+        {PT_GKLS_Simple, 3, 100, 0.01, 4.0, 8, "3D_Simple_GKLS"},
+        {PT_GKLS_Hard, 3, 100, 0.01, 4.0, 8, "3D_Hard_GKLS"}
+    };
+
+    for (const auto& test : tests) {
+        string filename = "results_" + test.name + ".csv";
+        runTest(test, filename);
+    }
+
+    return 0;
+}
+
+
+/*
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
+#include <algorithm>
+#include "AGPmnog.h"
+
+using namespace std;
+
+struct TestParams {
+    ProblemType type;
+    int dim;
+    int func_count;
+    double epsilon;
+    double r;
+    int tightness;
+    string name;
+};
+
+void runTest(const TestParams& params, const string& filename) {
+    cout << "\n========================================" << endl;
+    cout << "Запуск: " << params.name << endl;
+    cout << "Параметры: tightness=" << params.tightness
+        << ", epsilon=" << params.epsilon
+        << ", r=" << params.r << endl;
+    cout << "========================================\n" << endl;
+
+    ofstream file(filename);
+    file << "func_num;dim;class;iterations;"
+        << "x1_found;x2_found;f_found;"
+        << "x1_true;x2_true;f_true;error_f" << endl;
+
+    double total_iterations = 0;
+    double total_error_f = 0;
+    vector<double> errors;
+    int solved_count = 0;
+    int max_func = params.func_count;
+
+    // Для отслеживания нерешённых функций
+    vector<int> failed_functions;
+
+    for (int func_num = 1; func_num <= max_func; func_num++) {
+        GlobalSearch search(params.type, func_num, params.dim,
+            params.epsilon, params.r, params.tightness);
+        search.algorithm();
+
+        vector<double> point;
+        double value;
+        size_t points_count;
+        vector<double> true_point;
+        double true_value;
+
+        search.getResults(point, value, points_count, true_point, true_value);
+
+        double error_f = abs(value - true_value);
+        total_iterations += points_count;
+        total_error_f += error_f;
+        errors.push_back(error_f);
+
+        if (error_f < params.epsilon) {
+            solved_count++;
+        }
+        else {
+            failed_functions.push_back(func_num);
+        }
+
+        string className = "hard";
+
+        file << func_num << ";" << params.dim << ";" << className << ";" << points_count << ";"
+            << point[0] << ";" << point[1] << ";" << value << ";"
+            << true_point[0] << ";" << true_point[1] << ";" << true_value << ";"
+            << error_f << endl;
+
+        if (func_num % 10 == 0) {
+            cout << "  Выполнено " << func_num << "/" << max_func << " функций" << endl;
+        }
+    }
+
+    file.close();
+
+    if (!errors.empty()) {
+        sort(errors.begin(), errors.end());
+        cout << "\n========== ИТОГОВЫЕ РЕЗУЛЬТАТЫ ДЛЯ " << params.name << " ==========\n";
+        cout << "Решено функций (error < eps): " << solved_count << " из " << max_func
+            << " (" << fixed << setprecision(2) << (100.0 * solved_count / max_func) << "%)" << endl;
+        cout << "Среднее количество итераций: " << fixed << setprecision(2) << total_iterations / max_func << "\n";
+        cout << "Средняя погрешность: " << scientific << setprecision(6) << total_error_f / max_func << "\n";
+        cout << "Медианная погрешность: " << scientific << setprecision(6) << errors[errors.size() / 2] << "\n";
+
+        if (!failed_functions.empty()) {
+            cout << "Не решённые функции (первые 10): ";
+            for (size_t i = 0; i < min(failed_functions.size(), (size_t)10); i++) {
+                cout << failed_functions[i] << " ";
+            }
+            cout << endl;
+        }
         cout << "Результаты сохранены в файл: " << filename << endl;
     }
 }
@@ -238,33 +359,33 @@ void runTest(const TestParams& params, const string& filename) {
 int main() {
     setlocale(LC_ALL, "Russian");
 
-    int tightness = 10;
+    // ============================================
+    // ПАРАМЕТРЫ ДЛЯ 2D HARD GKLS
+    // Меняйте здесь значения для экспериментов
+    // ============================================
+
+    int tightness = 8;      // попробуйте 8, 10, 12
+    double epsilon = 0.01;  // попробуйте 0.01, 0.005, 0.001     для 2 hard 0,01
+    double r = 4.3;          // попробуйте 7.0, 8.0, 9.0, 10.0    для 2 hard 6.0
+    int func_count = 100;    // сколько функций тестировать
+
+    // Для быстрого теста (одна функция) - раскомментируйте:
+    // func_count = 1;
 
     vector<TestParams> tests = {
-        // Grishagin (100 функций)
-        {PT_Grishagin, 2, 100, 0.001, 2.7, tightness, "Grishagin"},
-        // 2D Simple GKLS (100 функций)
-        {PT_GKLS_Simple, 2, 100, 0.01, 4.5, tightness, "2D_Simple_GKLS"},
-        // 2D Hard GKLS (100 функций)
-        {PT_GKLS_Hard, 2, 100, 0.01, 5.6, tightness, "2D_Hard_GKLS"},
-        // 3D Simple GKLS (100 функций)
-        {PT_GKLS_Simple, 3, 100, 0.01, 4.5, tightness, "3D_Simple_GKLS"},
-        // 3D Hard GKLS (100 функций)
-        {PT_GKLS_Hard, 3, 100, 0.01, 5.6, tightness, "3D_Hard_GKLS"}
+        //{PT_GKLS_Hard, 2, func_count, epsilon, r, tightness, "2D_Hard_GKLS"}
+        //{PT_GKLS_Simple, 3, func_count, epsilon, r, tightness, "3D_Simple_GKLS"}
+        {PT_GKLS_Hard, 3, func_count, epsilon, r, tightness, "3D_Hard_GKLS"}
     };
-
-    cout << "================================================" << endl;
-    cout << "     ТЕСТИРОВАНИЕ ЗАДАЧ" << endl;
-    cout << "================================================" << endl;
 
     for (const auto& test : tests) {
         string filename = "results_" + test.name + ".csv";
         runTest(test, filename);
     }
 
-    cout << "\n================================================" << endl;
-    cout << "     ВСЕ ТЕСТЫ ЗАВЕРШЕНЫ" << endl;
-    cout << "================================================" << endl;
+    cout << "\n========================================" << endl;
+    cout << "ТЕСТ ЗАВЕРШЕН!" << endl;
+    cout << "========================================" << endl;
 
     return 0;
-}
+}*/

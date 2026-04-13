@@ -91,6 +91,10 @@ using namespace std;
 
 class Interval
 {
+private:
+    mutable double cached_delta;
+    mutable bool delta_valid;
+
 public:
     Point left;
     Point right;
@@ -98,7 +102,7 @@ public:
     double R;
     int index;
 
-    Interval() : left(Point(0, 0)), right(Point(1, 0)), length(1.0), R(0.0), index(0) {}
+    /*Interval() : left(Point(0, 0)), right(Point(1, 0)), length(1.0), R(0.0), index(0) {}
 
     Interval(const Point& left_gran, const Point& right_gran, int idx = 0)
         : left(left_gran), right(right_gran), index(idx)
@@ -113,8 +117,48 @@ public:
 
     double getDelta(int N) const {
         return pow(length, 1.0 / N);
+    }*/
+
+    Interval() : left(Point(0, 0)), right(Point(1, 0)), length(1.0), R(0.0), index(0), cached_delta(0.0), delta_valid(false) {}
+
+    Interval(const Point& left_gran, const Point& right_gran, int idx = 0)
+        : left(left_gran), right(right_gran), index(idx), cached_delta(0.0), delta_valid(false)
+    {
+        updateInterv();
     }
 
+    void updateInterv()
+    {
+        length = right.x - left.x;
+        delta_valid = false;  // инвалидируем кеш
+    }
+
+    double getDelta(int N) const {
+        if (!delta_valid) {
+            cached_delta = pow(length, 1.0 / N);
+            delta_valid = true;
+        }
+        return cached_delta;
+    }
+    /*double getNewPoint(double mu, double r, int N, int total_intervals) const
+    {
+        // Для граничных интервалов - точка в середине
+        //if (index == 0 || index == total_intervals - 1) {
+          //  return (left.x + right.x) / 2.0;
+        //}
+
+        // Для внутренних интервалов
+        double diff = right.z - left.z;
+        double delta_z = abs(diff);
+
+        if (mu < 1e-10) mu = 1.0;
+
+        double sign = (diff > 0) ? 1.0 : -1.0;
+
+        double pow_val = pow(delta_z / mu, N);
+        double new_x = (left.x + right.x) / 2.0 - sign * (1.0 / (2.0 * r)) * pow_val;
+        return new_x;
+    }*/
     double getNewPoint(double mu, double r, int N, int total_intervals) const
     {
         // Для граничных интервалов - точка в середине
@@ -124,21 +168,18 @@ public:
 
         // Для внутренних интервалов
         double diff = right.z - left.z;
-        double delta_z = abs(diff);
+        double delta_z = fabs(diff);
 
-        // Защита от деления на ноль
         if (mu < 1e-10) mu = 1.0;
 
-        // Знак: если diff > 0, то sign = +1, иначе -1
         double sign = (diff > 0) ? 1.0 : -1.0;
 
-        // Формула из статьи:
-        // x_new = (x_left + x_right)/2 - sign * (1/(2r)) * (|z_right - z_left| / mu)^N
         double pow_val = pow(delta_z / mu, N);
         double new_x = (left.x + right.x) / 2.0 - sign * (1.0 / (2.0 * r)) * pow_val;
 
-        // Ограничиваем точку, чтобы она не выходила за пределы интервала
-        new_x = max(left.x + 1e-10, min(right.x - 1e-10, new_x));
+        // Ограничиваем интервалом
+        if (new_x < left.x) new_x = left.x;
+        if (new_x > right.x) new_x = right.x;
 
         return new_x;
     }
